@@ -1,7 +1,8 @@
 import {Body, Controller, Delete, Get, Param, Post, Put} from '@nestjs/common';
 import {UserService} from "../service/user.service";
 import {User} from "../models/user.interface";
-import {Observable} from "rxjs";
+import {Observable, of} from "rxjs";
+import {catchError, map} from "rxjs/operators";
 
 @Controller('users')
 export class UserController {
@@ -9,8 +10,11 @@ export class UserController {
     }
     
     @Post()
-    create(@Body()user: User):Observable<User>{
-        return this.userService.create(user);
+    create(@Body()user: User):Observable<User | Object>{
+        return this.userService.create(user).pipe(
+            map((user: User) => user),
+            catchError(err => of({error: err.message}))
+        );
     } 
     
     @Get(':id')
@@ -32,5 +36,14 @@ export class UserController {
     updateOne(@Param('id') id: string, @Body() user: User): Observable<User>{
         return this.userService.updateOne(Number(id),user);
     }
-    
+
+    @Post('login')
+    login(@Body()user: User):Observable<Object>{
+        return this.userService.login(user).pipe(
+            map((jwt: string) => {
+                return {access_token: jwt }
+            })
+        );
+    }
+
 }
